@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NotSan BY">
+  <meta name="theme-color" content="#1a365d">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <title>NotSan Bayern</title>
+  <style>
+    :root {
+      --primary: #1a365d;
+      --primary-light: #2c5282;
+      --accent: #ed8936;
+      --success: #38a169;
+      --warning: #d69e2e;
+      --danger: #e53e3e;
+      --purple: #805ad5;
+      --teal: #319795;
+      --bg: #f7fafc;
+      --card-bg: #ffffff;
+      --text: #1a202c;
+      --text-light: #718096;
+      --border: #e2e8f0;
+      --safe-top: env(safe-area-inset-top, 20px);
+      --safe-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-top: var(--safe-top);
+      padding-bottom: calc(70px + var(--safe-bottom));
+      overflow-x: hidden;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 16px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+    .header h1 { font-size: 20px; font-weight: 700; }
+    .header-sub { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+    
+    .search-container {
+      padding: 12px 16px;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 60px;
+      z-index: 99;
+    }
+    .search-input {
+      width: 100%;
+      padding: 12px 16px 12px 44px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-size: 16px;
+      background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23718096' viewBox='0 0 24 24'%3E%3Cpath d='M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E") 14px center/20px no-repeat;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus { outline: none; border-color: var(--primary); }
+    
+    .tabs {
+      display: flex;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tab {
+      flex: 1;
+      min-width: 70px;
+      padding: 12px 6px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-light);
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    
+    .content { padding: 16px; }
+    .view { display: none; }
+    .view.active { display: block; }
+    
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+    }
+    .card-header.algo { background: linear-gradient(135deg, var(--teal) 0%, #2c7a7b 100%); }
+    .card-header.score { background: linear-gradient(135deg, var(--purple) 0%, #6b46c1 100%); }
+    .card-header.child { background: linear-gradient(135deg, var(--accent) 0%, #c05621 100%); }
+    .card-header h3 { font-size: 15px; font-weight: 600; }
+    .card-header .indication {
+      font-size: 11px;
+      background: rgba(255,255,255,0.2);
+      padding: 4px 10px;
+      border-radius: 20px;
+      max-width: 45%;
+      text-align: right;
+    }
+    .card-body { padding: 0; max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; }
+    .card.open .card-body { max-height: 3000px; padding: 16px; }
+    
+    .dose-section { margin-bottom: 16px; }
+    .dose-section:last-child { margin-bottom: 0; }
+    .dose-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .dose-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+    .dose-icon.adult { background: var(--primary); color: white; }
+    .dose-icon.child { background: var(--accent); color: white; }
+    
+    .dose-box {
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 12px;
+      border-left: 4px solid var(--primary);
+      margin-bottom: 8px;
+    }
+    .dose-box:last-child { margin-bottom: 0; }
+    .dose-box.child { border-left-color: var(--accent); }
+    .dose-box p { font-size: 14px; line-height: 1.6; margin-bottom: 6px; }
+    .dose-box p:last-child { margin-bottom: 0; }
+    .dose-value { font-weight: 700; color: var(--primary); font-size: 16px; }
+    .dose-box.child .dose-value { color: var(--accent); }
+    
+    .algo-step {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px dashed var(--border);
+    }
+    .algo-step:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .step-letter {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--teal);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .step-content { flex: 1; }
+    .step-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .step-desc { font-size: 13px; color: var(--text-light); line-height: 1.5; }
+    .step-actions { margin-top: 8px; }
+    .step-action {
+      display: inline-block;
+      background: #e6fffa;
+      color: var(--teal);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+    
+    .score-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .score-table th, .score-table td {
+      padding: 8px 6px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .score-table th {
+      background: var(--bg);
+      font-weight: 600;
+      color: var(--purple);
+    }
+    .score-table .score-val {
+      font-weight: 700;
+      color: var(--purple);
+      text-align: center;
+      width: 40px;
+    }
+    
+    .warning {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 12px;
+      font-size: 13px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .warning-icon { font-size: 16px; }
+    
+    .prep {
+      background: #e0f2fe;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #0369a1;
+    }
+    .prep strong { color: #0c4a6e; }
+    
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .category-btn {
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .category-btn:active { transform: scale(0.97); }
+    .category-btn.active { border-color: var(--teal); background: #e6fffa; }
+    .category-btn .icon { font-size: 24px; margin-bottom: 4px; }
+    .category-btn .label { font-size: 10px; font-weight: 600; color: var(--text); }
+    
+    .quick-ref {
+      background: linear-gradient(135deg, var(--danger) 0%, #c53030 100%);
+      color: white;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .quick-ref h3 { font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .quick-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .quick-ref-item {
+      background: rgba(255,255,255,0.15);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+    .quick-ref-item .value { font-size: 18px; font-weight: 700; }
+    .quick-ref-item .label { font-size: 10px; opacity: 0.9; margin-top: 2px; }
+    
+    .section-header {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 20px 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-header.teal { color: var(--teal); border-bottom-color: var(--teal); }
+    .section-header.purple { color: var(--purple); border-bottom-color: var(--purple); }
+    
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--card-bg);
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0;
+      padding-bottom: calc(8px + var(--safe-bottom));
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+      z-index: 1000;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 6px 10px;
+      color: var(--text-light);
+      text-decoration: none;
+      font-size: 9px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color 0.2s;
+      border: none;
+      background: none;
+    }
+    .nav-item.active { color: var(--primary); }
+    .nav-item svg { width: 22px; height: 22px; margin-bottom: 3px; }
+    
+    .symptom-list { list-style: none; }
+    .symptom-item {
+      background: var(--card-bg);
+      border-radius: 12px;
+      margin-bottom: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .symptom-header {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+    .symptom-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .symptom-icon.red { background: #fee2e2; }
+    .symptom-icon.orange { background: #ffedd5; }
+    .symptom-icon.blue { background: #dbeafe; }
+    .symptom-icon.green { background: #dcfce7; }
+    .symptom-icon.purple { background: #ede9fe; }
+    .symptom-icon.teal { background: #e6fffa; }
+    .symptom-info { flex: 1; }
+    .symptom-info h4 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .symptom-info p { font-size: 11px; color: var(--text-light); }
+    
+    .info-box {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+    .info-box h4 { font-size: 13px; font-weight: 700; color: #166534; margin-bottom: 6px; }
+    .info-box p { font-size: 12px; color: #166534; line-height: 1.5; }
+    .info-box.teal { background: #e6fffa; border-color: #81e6d9; }
+    .info-box.teal h4, .info-box.teal p { color: #234e52; }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .card { animation: fadeIn 0.3s ease; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>🏥 NotSan Bayern</h1>
+    <div class="header-sub">Medikamente & Algorithmen • ÄLRD Bayern • ERC 2021</div>
+  </header>
+
+  <div class="search-container">
+    <input type="search" class="search-input" id="searchInput" placeholder="Medikament, Schema oder Algorithmus...">
+  </div>
+
+  <div class="tabs" id="mainTabs">
+    <button class="tab active" data-view="leitsymptome">Symptome</button>
+    <button class="tab" data-view="medikamente">Medikamente</button>
+    <button class="tab" data-view="algorithmen">Algorithmen</button>
+    <button class="tab" data-view="reanimation">CPR</button>
+    <button class="tab" data-view="kinder">Kinder</button>
+  </div>
+
+  <main class="content">
+    <!-- LEITSYMPTOME VIEW -->
+    <div id="leitsymptome" class="view active">
+      <div class="info-box">
+        <h4>📋 Schnellzugriff nach Leitsymptom</h4>
+        <p>Wählen Sie ein Leitsymptom für relevante Medikamente.</p>
+      </div>
+      
+      <ul class="symptom-list">
+        <li class="symptom-item" onclick="showSymptom('schmerz')">
+          <div class="symptom-header">
+            <div class="symptom-icon red">💊</div>
+            <div class="symptom-info">
+              <h4>Schmerz</h4>
+              <p>Fentanyl, Esketamin, Morphin, Piritramid</p>
+            </div>
+          </div>
+        </li>
+        <li class="symptom-item" onclick="showSymptom('anaphylaxie')">
+          <div class="symptom-header">
+            <div class="symptom-icon orange">⚡</div>
+            <div class="symptom-info">
+              <h4>Anaphylaxie</h4>
+              <p>Adrenalin i.m.</p>
+            </div>
+          </div>
+        </li>
+        <li class="symptom-item" onclick="showSymptom('krampf')">
+          <div class="symptom-header">
+            <div class="symptom-icon purple">🧠</div>
+            <div class="symptom-info">
+              <h4>Krampfanfall</h4>
+              <p>Midazolam, Diazepam rektal</p>
+            </div>
+          </div>
+        </li>
+        <li class="symptom-item" onclick="showSymptom('atemweg')">
+          <div class="symptom-header">
+            <div class="symptom-icon blue">🫁</div>
+            <div class="symptom-info">
+              <h4>Bronchospastik</h4>
+              <p>Salbutamol, Ipratropium</p>
+            </div>
+          </div>
+        </li>
+        <li class="symptom-item" onclick="showSymptom('pseudokrupp')">
+          <div class="symptom-header">
+            <div class="symptom-icon blue">👶</div>
+            <div class="symptom-info">
+              <h4>Pseudokrupp</h4>
+              <p>Adrenalin inhalativ, Prednison</p>
+            </div>
+          </div>
+        </li>
+        <li class="symptom-item" onclick="showSymptom('hypoglyk')">
+          <div class="symptom-header">
+            <div class="symptom-icon green">🍬</div>
+            <div class="symptom-info">
+              <h4>Hypoglykämie</h4>
+              <p>Glucose 40%, Thiamin</p>
+            </div>
+          </div>
+        </li>
+        <li class="symptom-item" onclick="showSymptom('bradykardie')">
+          <div class="symptom-header">
+            <div class="symptom-icon red">❤️</div>
+            <div class="symptom-info">
+              <h4>Bradykardie</h4>
+              <p>Atropin</p>
+            </div>
+          </div>
+        </li>
+        <li class="symptom-item" onclick="showSymptom('hypertonie')">
+          <div class="symptom-header">
+            <div class="symptom-icon red">📈</div>
+            <div class="symptom-info">
+              <h4>Hypertensiver Notfall</h4>
+              <p>Urapidil</p>
+            </div>
+          </div>
+        </li>
+        <li class="symptom-item" onclick="showSymptom('intox')">
+          <div class="symptom-header">
+            <div class="symptom-icon purple">☠️</div>
+            <div class="symptom-info">
+              <h4>Intoxikation</h4>
+              <p>Naloxon, Flumazenil</p>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- MEDIKAMENTE VIEW -->
+    <div id="medikamente" class="view">
+      <div id="medList"></div>
+    </div>
+
+    <!-- ALGORITHMEN VIEW -->
+    <div id="algorithmen" class="view">
+      <div class="info-box teal">
+        <h4>📐 Rettungsdienst-Schemata</h4>
+        <p>xABCDE, SAMPLER, OPQRST, ZOPS, BE-FAST, GCS, APGAR und mehr.</p>
+      </div>
+      
+      <div class="category-grid">
+        <div class="category-btn active" onclick="filterAlgo('all')">
+          <div class="icon">📚</div>
+          <div class="label">Alle</div>
+        </div>
+        <div class="category-btn" onclick="filterAlgo('untersuchung')">
+          <div class="icon">🔍</div>
+          <div class="label">Untersuch.</div>
+        </div>
+        <div class="category-btn" onclick="filterAlgo('anamnese')">
+          <div class="icon">📋</div>
+          <div class="label">Anamnese</div>
+        </div>
+        <div class="category-btn" onclick="filterAlgo('neuro')">
+          <div class="icon">🧠</div>
+          <div class="label">Neurologie</div>
+        </div>
+        <div class="category-btn" onclick="filterAlgo('scores')">
+          <div class="icon">📊</div>
+          <div class="label">Scores</div>
+        </div>
+        <div class="category-btn" onclick="filterAlgo('uebergabe')">
+          <div class="icon">🤝</div>
+          <div class="label">Übergabe</div>
+        </div>
+      </div>
+      
+      <div id="algoList"></div>
+    </div>
+
+    <!-- REANIMATION VIEW -->
+    <div id="reanimation" class="view">
+      <div class="quick-ref">
+        <h3>🚨 CPR Erwachsene (ERC 2021)</h3>
+        <div class="quick-ref-grid">
+          <div class="quick-ref-item">
+            <div class="value">30:2</div>
+            <div class="label">Kompression:Beatmung</div>
+          </div>
+          <div class="quick-ref-item">
+            <div class="value">100-120</div>
+            <div class="label">Frequenz/min</div>
+          </div>
+          <div class="quick-ref-item">
+            <div class="value">5-6 cm</div>
+            <div class="label">Drucktiefe</div>
+          </div>
+          <div class="quick-ref-item">
+            <div class="value">alle 2 min</div>
+            <div class="label">Rhythmuscheck</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section-header">💉 Medikamente CPR</div>
+      
+      <div class="card open">
+        <div class="card-header">
+          <h3>Adrenalin</h3>
+          <span class="indication">1mg i.v.</span>
+        </div>
+        <div class="card-body">
+          <div class="dose-box">
+            <p><span class="dose-value">1 mg i.v./i.o.</span></p>
+            <p><strong>Nicht-schockbar:</strong> Sofort nach Zugang</p>
+            <p><strong>Schockbar:</strong> Nach 3. Defibrillation</p>
+            <p><strong>Repetition:</strong> Alle 3-5 min</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <h3>Amiodaron</h3>
+          <span class="indication">VF/pVT</span>
+        </div>
+        <div class="card-body">
+          <div class="dose-box">
+            <p><span class="dose-value">300 mg i.v.</span> nach 3. Defi</p>
+            <p><span class="dose-value">150 mg i.v.</span> nach 5. Defi</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section-header teal">🔄 4H & HITS</div>
+      
+      <div class="card">
+        <div class="card-header algo" onclick="toggleCard(this)">
+          <h3>4H - Reversible Ursachen</h3>
+          <span class="indication">Hs</span>
+        </div>
+        <div class="card-body">
+          <div class="algo-step">
+            <div class="step-letter">H</div>
+            <div class="step-content">
+              <div class="step-title">Hypoxie</div>
+              <div class="step-desc">→ Beatmung optimieren, 100% O₂</div>
+            </div>
+          </div>
+          <div class="algo-step">
+            <div class="step-letter">H</div>
+            <div class="step-content">
+              <div class="step-title">Hypovolämie</div>
+              <div class="step-desc">→ Volumen, Blutung stoppen</div>
+            </div>
+          </div>
+          <div class="algo-step">
+            <div class="step-letter">H</div>
+            <div class="step-content">
+              <div class="step-title">Hypo-/Hyperkaliämie</div>
+              <div class="step-desc">→ Calciumgluconat 30ml 10%</div>
+            </div>
+          </div>
+          <div class="algo-step">
+            <div class="step-letter">H</div>
+            <div class="step-content">
+              <div class="step-title">Hypo-/Hyperthermie</div>
+              <div class="step-desc">→ Wärme/Kühlung</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header algo" onclick="toggleCard(this)">
+          <h3>HITS - Reversible Ursachen</h3>
+          <span class="indication">Ts</span>
+        </div>
+        <div class="card-body">
+          <div class="algo-step">
+            <div class="step-letter">H</div>
+            <div class="step-content">
+              <div class="step-title">Herzbeuteltamponade</div>
+              <div class="step-desc">→ Entlastungspunktion/Thorakotomie</div>
+            </div>
+          </div>
+          <div class="algo-step">
+            <div class="step-letter">I</div>
+            <div class="step-content">
+              <div class="step-title">Intoxikation</div>
+              <div class="step-desc">→ Antidot, supportive Therapie</div>
+            </div>
+          </div>
+          <div class="algo-step">
+            <div class="step-letter">T</div>
+            <div class="step-content">
+              <div class="step-title">Thrombose (LAE/MI)</div>
+              <div class="step-desc">→ Lyse erwägen, HKL</div>
+            </div>
+          </div>
+          <div class="algo-step">
+            <div class="step-letter">S</div>
+            <div class="step-content">
+              <div class="step-title">Spannungspneumothorax</div>
+              <div class="step-desc">→ Nadeldekompression 2.ICR MCL</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KINDER VIEW -->
+    <div id="kinder" class="view">
+      <div class="quick-ref" style="background: linear-gradient(135deg, var(--accent) 0%, #c05621 100%);">
+        <h3>👶 CPR Kinder (ERC 2021)</h3>
+        <div class="quick-ref-grid">
+          <div class="quick-ref-item">
+            <div class="value">15:2</div>
+            <div class="label">Professionell</div>
+          </div>
+          <div class="quick-ref-item">
+            <div class="value">5 Initial</div>
+            <div class="label">Beatmungen</div>
+          </div>
+          <div class="quick-ref-item">
+            <div class="value">⅓ Thorax</div>
+            <div class="label">Drucktiefe</div>
+          </div>
+          <div class="quick-ref-item">
+            <div class="value">4 J/kg</div>
+            <div class="label">Defibrillation</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section-header purple">📊 APGAR-Score</div>
+      
+      <div class="card">
+        <div class="card-header score" onclick="toggleCard(this)">
+          <h3>APGAR-Score</h3>
+          <span class="indication">1/5/10 min</span>
+        </div>
+        <div class="card-body">
+          <table class="score-table">
+            <tr>
+              <th>Kriterium</th>
+              <th class="score-val">0</th>
+              <th class="score-val">1</th>
+              <th class="score-val">2</th>
+            </tr>
+            <tr>
+              <td><strong>A</strong>tmung</td>
+              <td class="score-val">keine</td>
+              <td class="score-val">unreg.</td>
+              <td class="score-val">kräftig</td>
+            </tr>
+            <tr>
+              <td><strong>P</strong>uls</td>
+              <td class="score-val">0</td>
+              <td class="score-val">&lt;100</td>
+              <td class="score-val">&gt;100</td>
+            </tr>
+            <tr>
+              <td><strong>G</strong>rundtonus</td>
+              <td class="score-val">schlaff</td>
+              <td class="score-val">träge</td>
+              <td class="score-val">aktiv</td>
+            </tr>
+            <tr>
+              <td><strong>A</strong>ussehen</td>
+              <td class="score-val">blau</td>
+              <td class="score-val">Akrozyan.</td>
+              <td class="score-val">rosig</td>
+            </tr>
+            <tr>
+              <td><strong>R</strong>eflexe</td>
+              <td class="score-val">keine</td>
+              <td class="score-val">Grimasse</td>
+              <td class="score-val">Schreien</td>
+            </tr>
+          </table>
+          <div class="warning">
+            <span class="warning-icon">ℹ️</span>
+            <span>7-10: lebensfrisch | 5-6: leicht deprimiert | &lt;5: schwer deprimiert</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section-header" style="color: var(--accent); border-bottom-color: var(--accent);">💊 Kinderdosierungen</div>
+      
+      <div class="card">
+        <div class="card-header child" onclick="toggleCard(this)">
+          <h3>Adrenalin Kinder CPR</h3>
+          <span class="indication">Reanimation</span>
+        </div>
+        <div class="card-body">
+          <div class="dose-box child">
+            <p><span class="dose-value">10 µg/kg i.v./i.o.</span></p>
+            <p>= 0,1 ml/kg der 1:10.000 Lösung</p>
+          </div>
+          <div class="prep"><strong>Verdünnung:</strong> 1 Amp (1mg) + 9ml NaCl = 100 µg/ml</div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header child" onclick="toggleCard(this)">
+          <h3>Midazolam Kinder</h3>
+          <span class="indication">Krampf</span>
+        </div>
+        <div class="card-body">
+          <div class="dose-box child">
+            <p><span class="dose-value">0,1 mg/kg i.v.</span> (max. 5 mg)</p>
+            <p><span class="dose-value">0,3 mg/kg intranasal</span> (max. 10 mg)</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header child" onclick="toggleCard(this)">
+          <h3>Diazepam Kinder</h3>
+          <span class="indication">Krampf rektal</span>
+        </div>
+        <div class="card-body">
+          <div class="dose-box child">
+            <p>&lt;15 kg: <span class="dose-value">5 mg rektal</span></p>
+            <p>≥15 kg: <span class="dose-value">10 mg rektal</span></p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header child" onclick="toggleCard(this)">
+          <h3>Esketamin Kinder</h3>
+          <span class="indication">Analgesie bis 11J</span>
+        </div>
+        <div class="card-body">
+          <div class="dose-box child">
+            <p><span class="dose-value">2 mg/kg intranasal</span></p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header child" onclick="toggleCard(this)">
+          <h3>Glucose Kinder</h3>
+          <span class="indication">Hypoglykämie</span>
+        </div>
+        <div class="card-body">
+          <div class="dose-box child">
+            <p><span class="dose-value">200 mg/kg i.v.</span></p>
+            <p>= 0,5 ml/kg G40% (verdünnt 1:1 mit NaCl)</p>
+          </div>
+          <div class="warning">
+            <span class="warning-icon">⚠️</span>
+            <span>Nie konzentriert über PVK!</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-view="leitsymptome">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+      Symptom
+    </button>
+    <button class="nav-item" data-view="medikamente">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.22 11.29l7.07-7.07c.78-.78 2.05-.78 2.83 0l6.36 6.36c.78.78.78 2.05 0 2.83l-7.07 7.07c-.78.78-2.05.78-2.83 0l-6.36-6.36c-.78-.78-.78-2.05 0-2.83z"/></svg>
+      Meds
+    </button>
+    <button class="nav-item" data-view="algorithmen">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/><path d="M8 15h8v2H8zm0-4h8v2H8z"/></svg>
+      Algo
+    </button>
+    <button class="nav-item" data-view="reanimation">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      CPR
+    </button>
+    <button class="nav-item" data-view="kinder">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+      Kinder
+    </button>
+  </nav>
+
+  <script>
+    const searchInput = document.getElementById('searchInput');
+    const medList = document.getElementById('medList');
+    const algoList = document.getElementById('algoList');
+    const views = document.querySelectorAll('.view');
+    const tabs = document.querySelectorAll('.tab');
+    const navItems = document.querySelectorAll('.nav-item');
+
+    const medikamente = [
+      { name: "Adrenalin", wirkstoff: "Epinephrin", form: "1mg/ml Inj.", indikationen: ["Reanimation", "Anaphylaxie", "Pseudokrupp"],
+        erwachsene: { rea: { dosis: "1 mg i.v./i.o.", hinweis: "Alle 3-5 min" }, anaphy: { dosis: "0,5 mg i.m.", hinweis: "Repetition nach 5 min möglich" }, krupp: { dosis: "5 mg inhalativ", hinweis: "Unverdünnt" } },
+        kinder: { rea: { dosis: "10 µg/kg i.v./i.o.", hinweis: "0,1 ml/kg 1:10.000" }, anaphy: { dosis: "10 µg/kg i.m.", hinweis: "Max 0,5 mg" }, krupp: { dosis: "5 mg inhalativ", hinweis: "Altersunabhängig" } }, btm: false },
+      { name: "Amiodaron", wirkstoff: "Amiodaron", form: "150mg/3ml", indikationen: ["VF/pVT"],
+        erwachsene: { d1: { dosis: "300 mg i.v.", hinweis: "Nach 3. Defi" }, d2: { dosis: "150 mg i.v.", hinweis: "Nach 5. Defi" } },
+        kinder: { std: { dosis: "5 mg/kg i.v.", hinweis: "Nach 3. Defi" } }, btm: false },
+      { name: "Atropin", wirkstoff: "Atropinsulfat", form: "0,5mg/ml", indikationen: ["Bradykardie"],
+        erwachsene: { std: { dosis: "0,5 mg i.v.", hinweis: "Max. 3 mg gesamt" } },
+        kinder: { std: { dosis: "20 µg/kg i.v.", hinweis: "Min 0,1 mg, max 0,5 mg ED" } }, btm: false },
+      { name: "Midazolam", wirkstoff: "Midazolam", form: "5mg/ml", indikationen: ["Krampfanfall"],
+        erwachsene: { iv: { dosis: "5 mg i.v.", hinweis: "Langsam" }, nasal: { dosis: "10 mg i.n.", hinweis: "MAD" } },
+        kinder: { iv: { dosis: "0,1 mg/kg i.v.", hinweis: "Max 5 mg" }, nasal: { dosis: "0,3 mg/kg i.n.", hinweis: "Max 10 mg" } }, warnung: "Atemdepression!", btm: true },
+      { name: "Diazepam", wirkstoff: "Diazepam", form: "5/10mg Rektiole", indikationen: ["Krampf Kinder"],
+        kinder: { lt15: { dosis: "5 mg rektal", hinweis: "<15 kg" }, gt15: { dosis: "10 mg rektal", hinweis: "≥15 kg" } }, btm: true },
+      { name: "Fentanyl", wirkstoff: "Fentanyl", form: "0,1mg/2ml", indikationen: ["Starke Schmerzen"],
+        erwachsene: { std: { dosis: "0,05 mg i.v.", hinweis: "Titration" } },
+        kinder: { nasal: { dosis: "2 µg/kg i.n.", hinweis: "Ab 12J, max 0,1 mg" } }, warnung: "BTM! Atemdepression!", btm: true },
+      { name: "Esketamin", wirkstoff: "Esketamin", form: "25mg/ml", indikationen: ["Analgesie Kinder"],
+        kinder: { nasal: { dosis: "2 mg/kg i.n.", hinweis: "Bis 11 Jahre" } }, warnung: "BTM!", btm: true },
+      { name: "Morphin", wirkstoff: "Morphin", form: "10mg/ml", indikationen: ["ACS Schmerz"],
+        erwachsene: { std: { dosis: "1-2 mg i.v.", hinweis: "Max 5 mg" } }, warnung: "BTM! Nur bei ACS", btm: true },
+      { name: "Piritramid", wirkstoff: "Piritramid", form: "15mg/2ml", indikationen: ["Schmerz"],
+        erwachsene: { std: { dosis: "7,5 mg Kurzinfusion", hinweis: "Über 5 min, >50kg" } }, warnung: "BTM!", btm: true },
+      { name: "Glucose 40%", wirkstoff: "Glucose", form: "10g/25ml", indikationen: ["Hypoglykämie"],
+        erwachsene: { std: { dosis: "12g + 8g i.v.", hinweis: "= 30ml + 20ml" } },
+        kinder: { std: { dosis: "200 mg/kg i.v.", hinweis: "0,5 ml/kg verdünnt" } }, warnung: "Nie konzentriert bei Kindern!", btm: false },
+      { name: "Salbutamol", wirkstoff: "Salbutamol", form: "2,5mg/2,5ml", indikationen: ["Bronchospastik"],
+        erwachsene: { std: { dosis: "2,5 mg inh.", hinweis: "Vernebler" } },
+        kinder: { std: { dosis: "2,5 mg inh.", hinweis: "Dosisunabhängig" } }, btm: false },
+      { name: "Ipratropium", wirkstoff: "Ipratropiumbromid", form: "0,5mg/2ml", indikationen: ["Bronchospastik"],
+        erwachsene: { std: { dosis: "0,5 mg inh.", hinweis: "+ Salbutamol" } },
+        kinder: { std: { dosis: "0,25 mg inh.", hinweis: "+ Salbutamol" } }, btm: false },
+      { name: "Naloxon", wirkstoff: "Naloxon", form: "1,8mg Nasenspray", indikationen: ["Opioid-Intox"],
+        erwachsene: { nasal: { dosis: "1,8 mg i.n.", hinweis: "Ab 14. LJ" } }, warnung: "Kurze HWZ!", btm: false },
+      { name: "Flumazenil", wirkstoff: "Flumazenil", form: "0,5mg/5ml", indikationen: ["Benzo-Intox"],
+        erwachsene: { std: { dosis: "0,2 mg i.v.", hinweis: "Titration" } },
+        kinder: { std: { dosis: "0,01 mg/kg i.v.", hinweis: "Max 0,2 mg ED" } }, warnung: "Krampfgefahr!", btm: false },
+      { name: "Urapidil", wirkstoff: "Urapidil", form: "25mg/5ml", indikationen: ["Hypertensiver Notfall"],
+        erwachsene: { std: { dosis: "5 mg i.v.", hinweis: "Max 25% RR-Senkung" } }, warnung: "Cave Stroke!", btm: false },
+      { name: "Cafedrin/Theodrenalin", wirkstoff: "Akrinor", form: "200mg+10mg/2ml", indikationen: ["Hypotension"],
+        erwachsene: { std: { dosis: "0,5 ml i.v.", hinweis: "Max 4 ml" } }, btm: false },
+      { name: "Prednison", wirkstoff: "Rectodelt", form: "100mg Supp.", indikationen: ["Pseudokrupp"],
+        erwachsene: { std: { dosis: "100 mg rektal", hinweis: "Altersunabhängig" } },
+        kinder: { std: { dosis: "100 mg rektal", hinweis: "Altersunabhängig" } }, btm: false },
+      { name: "Oxytocin", wirkstoff: "Oxytocin", form: "3 IE/ml", indikationen: ["Postpartale Blutung"],
+        erwachsene: { std: { dosis: "3 IE i.v. langsam", hinweis: "Nach Plazenta" } }, btm: false },
+      { name: "Thiamin", wirkstoff: "Vitamin B1", form: "100mg/2ml", indikationen: ["Alkohol+Hypoglykämie"],
+        erwachsene: { std: { dosis: "100 mg Kurzinfusion", hinweis: "VOR Glucose!" } }, warnung: "Immer VOR Glucose!", btm: false },
+      { name: "Oxymetazolin", wirkstoff: "Oxymetazolin", form: "Nasenspray", indikationen: ["Epistaxis"],
+        erwachsene: { std: { dosis: "2-6 Sprühstöße", hinweis: ">50 kg" } }, btm: false }
+    ];
+
+    const algorithmen = [
+      { name: "xABCDE-Schema", kategorie: "untersuchung", typ: "algo", kurz: "Primary Survey",
+        schritte: [
+          { buchstabe: "x", titel: "eXsanguination", desc: "Kritische Blutung stoppen", aktionen: ["Tourniquet", "Druckverband"] },
+          { buchstabe: "A", titel: "Airway", desc: "Atemweg frei? HWS bei Trauma", aktionen: ["Esmarch", "Absaugen", "Guedel"] },
+          { buchstabe: "B", titel: "Breathing", desc: "Atmung: AF, SpO₂, Auskultation", aktionen: ["O₂", "Beatmung", "Entlastung"] },
+          { buchstabe: "C", titel: "Circulation", desc: "Kreislauf: Puls, RR, Rekapzeit", aktionen: ["i.v.-Zugang", "Volumen"] },
+          { buchstabe: "D", titel: "Disability", desc: "Neuro: GCS, ZOPS, Pupillen, BZ", aktionen: ["GCS", "BZ-Messung"] },
+          { buchstabe: "E", titel: "Exposure", desc: "Entkleiden, Bodycheck, Wärme", aktionen: ["Ganzkörper", "Temperatur"] }
+        ]},
+      { name: "SAMPLER-Schema", kategorie: "anamnese", typ: "algo", kurz: "Anamnese",
+        schritte: [
+          { buchstabe: "S", titel: "Symptoms", desc: "Beschwerden, Schmerzen → OPQRST", aktionen: [] },
+          { buchstabe: "A", titel: "Allergies", desc: "Allergien (bes. Medikamente)", aktionen: [] },
+          { buchstabe: "M", titel: "Medication", desc: "Dauermedikation", aktionen: [] },
+          { buchstabe: "P", titel: "Past medical history", desc: "Vorerkrankungen, OPs", aktionen: [] },
+          { buchstabe: "L", titel: "Last oral intake", desc: "Letzte Mahlzeit/Flüssigkeit", aktionen: [] },
+          { buchstabe: "E", titel: "Events", desc: "Was ist passiert?", aktionen: [] },
+          { buchstabe: "R", titel: "Risk factors", desc: "Risikofaktoren (+S bei Frauen)", aktionen: [] }
+        ]},
+      { name: "OPQRST-Schema", kategorie: "anamnese", typ: "algo", kurz: "Schmerzanamnese",
+        schritte: [
+          { buchstabe: "O", titel: "Onset", desc: "Beginn: Wann? Plötzlich/schleichend?", aktionen: [] },
+          { buchstabe: "P", titel: "Provocation/Palliation", desc: "Was verschlimmert/lindert?", aktionen: [] },
+          { buchstabe: "Q", titel: "Quality", desc: "Qualität: stechend, brennend, drückend?", aktionen: [] },
+          { buchstabe: "R", titel: "Radiation", desc: "Ausstrahlung: Wohin?", aktionen: [] },
+          { buchstabe: "S", titel: "Severity", desc: "Stärke: NRS 0-10", aktionen: [] },
+          { buchstabe: "T", titel: "Time", desc: "Dauer, Verlauf", aktionen: [] }
+        ]},
+      { name: "ZOPS-Schema", kategorie: "neuro", typ: "algo", kurz: "Orientierung",
+        schritte: [
+          { buchstabe: "Z", titel: "Zeit", desc: "Tag/Monat/Jahr?", aktionen: [] },
+          { buchstabe: "O", titel: "Ort", desc: "Wo sind wir?", aktionen: [] },
+          { buchstabe: "P", titel: "Person", desc: "Name? Geburtsdatum?", aktionen: [] },
+          { buchstabe: "S", titel: "Situation", desc: "Was ist passiert?", aktionen: [] }
+        ]},
+      { name: "BE-FAST-Schema", kategorie: "neuro", typ: "algo", kurz: "Schlaganfall",
+        schritte: [
+          { buchstabe: "B", titel: "Balance", desc: "Gleichgewichtsstörung?", aktionen: [] },
+          { buchstabe: "E", titel: "Eyes", desc: "Sehstörung? Doppelbilder?", aktionen: [] },
+          { buchstabe: "F", titel: "Face", desc: "Gesichtslähmung? Lächeln!", aktionen: [] },
+          { buchstabe: "A", titel: "Arms", desc: "Armschwäche? Hochhalten!", aktionen: [] },
+          { buchstabe: "S", titel: "Speech", desc: "Sprachstörung? Nachsprechen!", aktionen: [] },
+          { buchstabe: "T", titel: "Time", desc: "Symptombeginn? Time is Brain!", aktionen: [] }
+        ]},
+      { name: "AVPU / WASB", kategorie: "neuro", typ: "algo", kurz: "Bewusstsein",
+        schritte: [
+          { buchstabe: "A/W", titel: "Alert / Wach", desc: "Patient wach und aufmerksam", aktionen: [] },
+          { buchstabe: "V/A", titel: "Voice / Ansprache", desc: "Reagiert auf Ansprache", aktionen: [] },
+          { buchstabe: "P/S", titel: "Pain / Schmerzreiz", desc: "Nur auf Schmerzreiz", aktionen: [] },
+          { buchstabe: "U/B", titel: "Unresponsive / Bewusstlos", desc: "Keine Reaktion", aktionen: [] }
+        ]},
+      { name: "pDMS-Kontrolle", kategorie: "untersuchung", typ: "algo", kurz: "Extremitäten",
+        schritte: [
+          { buchstabe: "D", titel: "Durchblutung", desc: "Nagelbettprobe, Rekapzeit <2s, Pulse", aktionen: [] },
+          { buchstabe: "M", titel: "Motorik", desc: "Finger/Zehen bewegen", aktionen: [] },
+          { buchstabe: "S", titel: "Sensibilität", desc: "Berührung spüren?", aktionen: [] }
+        ]},
+      { name: "Glasgow Coma Scale", kategorie: "scores", typ: "score", kurz: "GCS 3-15",
+        tabelle: [
+          { kriterium: "Augenöffnen (E)", werte: [{ punkte: 4, text: "Spontan" }, { punkte: 3, text: "Ansprache" }, { punkte: 2, text: "Schmerz" }, { punkte: 1, text: "Keine" }] },
+          { kriterium: "Verbale Reaktion (V)", werte: [{ punkte: 5, text: "Orientiert" }, { punkte: 4, text: "Desorient." }, { punkte: 3, text: "Inadäquat" }, { punkte: 2, text: "Laute" }, { punkte: 1, text: "Keine" }] },
+          { kriterium: "Motorik (M)", werte: [{ punkte: 6, text: "Befolgt" }, { punkte: 5, text: "Gezielt" }, { punkte: 4, text: "Ungezielt" }, { punkte: 3, text: "Beugung" }, { punkte: 2, text: "Streckung" }, { punkte: 1, text: "Keine" }] }
+        ], interpretation: "15=Wach | 13-14=Leicht | 9-12=Mittel | 3-8=Schwer (Intubation!)" },
+      { name: "APGAR-Score", kategorie: "scores", typ: "score", kurz: "Neugeborene",
+        tabelle: [
+          { kriterium: "Atmung", werte: [{ punkte: 0, text: "Keine" }, { punkte: 1, text: "Unregelm." }, { punkte: 2, text: "Kräftig" }] },
+          { kriterium: "Puls", werte: [{ punkte: 0, text: "0" }, { punkte: 1, text: "<100" }, { punkte: 2, text: ">100" }] },
+          { kriterium: "Grundtonus", werte: [{ punkte: 0, text: "Schlaff" }, { punkte: 1, text: "Träge" }, { punkte: 2, text: "Aktiv" }] },
+          { kriterium: "Aussehen", werte: [{ punkte: 0, text: "Blau" }, { punkte: 1, text: "Akrozyan." }, { punkte: 2, text: "Rosig" }] },
+          { kriterium: "Reflexe", werte: [{ punkte: 0, text: "Keine" }, { punkte: 1, text: "Grimasse" }, { punkte: 2, text: "Schreien" }] }
+        ], interpretation: "1/5/10 min | 7-10=gut | 5-6=leicht↓ | <5=schwer↓" },
+      { name: "4H & HITS", kategorie: "untersuchung", typ: "algo", kurz: "Reversible CPR-Ursachen",
+        schritte: [
+          { buchstabe: "H", titel: "Hypoxie", desc: "→ Beatmung, 100% O₂", aktionen: [] },
+          { buchstabe: "H", titel: "Hypovolämie", desc: "→ Volumen, Blutung stoppen", aktionen: [] },
+          { buchstabe: "H", titel: "Hypo-/Hyperkaliämie", desc: "→ Ca-Gluconat", aktionen: [] },
+          { buchstabe: "H", titel: "Hypo-/Hyperthermie", desc: "→ Wärme/Kühlung", aktionen: [] },
+          { buchstabe: "H", titel: "Herzbeuteltamponade", desc: "→ Punktion", aktionen: [] },
+          { buchstabe: "I", titel: "Intoxikation", desc: "→ Antidot", aktionen: [] },
+          { buchstabe: "T", titel: "Thrombose", desc: "→ Lyse", aktionen: [] },
+          { buchstabe: "S", titel: "Spannungspneumothorax", desc: "→ Entlastung 2.ICR", aktionen: [] }
+        ]},
+      { name: "ATMIST-Schema", kategorie: "uebergabe", typ: "algo", kurz: "Trauma-Übergabe",
+        schritte: [
+          { buchstabe: "A", titel: "Age", desc: "Alter und Name", aktionen: [] },
+          { buchstabe: "T", titel: "Time", desc: "Unfallzeit", aktionen: [] },
+          { buchstabe: "M", titel: "Mechanism", desc: "Unfallmechanismus", aktionen: [] },
+          { buchstabe: "I", titel: "Injury", desc: "Verletzungen Kopf→Fuß", aktionen: [] },
+          { buchstabe: "S", titel: "Signs", desc: "Befunde nach xABCDE", aktionen: [] },
+          { buchstabe: "T", titel: "Treatment", desc: "Therapie und Wirkung", aktionen: [] }
+        ]},
+      { name: "SBAR-Schema", kategorie: "uebergabe", typ: "algo", kurz: "Übergabe",
+        schritte: [
+          { buchstabe: "S", titel: "Situation", desc: "Wer? Welcher Patient?", aktionen: [] },
+          { buchstabe: "B", titel: "Background", desc: "Vorgeschichte, Grund", aktionen: [] },
+          { buchstabe: "A", titel: "Assessment", desc: "Aktuelle Einschätzung", aktionen: [] },
+          { buchstabe: "R", titel: "Recommendation", desc: "Was wird benötigt?", aktionen: [] }
+        ]}
+    ];
+
+    function init() {
+      renderMedList('');
+      renderAlgoList('all');
+      setupEventListeners();
+    }
+
+    function renderMedList(filter) {
+      const filtered = medikamente.filter(m => 
+        filter === '' || m.name.toLowerCase().includes(filter.toLowerCase()) ||
+        m.wirkstoff.toLowerCase().includes(filter.toLowerCase()) ||
+        m.indikationen.some(i => i.toLowerCase().includes(filter.toLowerCase()))
+      );
+      medList.innerHTML = filtered.map(med => `
+        <div class="card" data-name="${med.name}">
+          <div class="card-header" onclick="toggleCard(this)">
+            <h3>${med.name}${med.btm ? ' ⚠️' : ''}</h3>
+            <span class="indication">${med.indikationen[0]}</span>
+          </div>
+          <div class="card-body">
+            <div class="prep"><strong>Form:</strong> ${med.form}</div>
+            ${med.erwachsene ? `<div class="dose-section"><div class="dose-title"><div class="dose-icon adult">E</div> Erwachsene</div>
+              ${Object.entries(med.erwachsene).map(([k, v]) => `<div class="dose-box"><p><span class="dose-value">${v.dosis}</span></p>${v.hinweis ? `<p>${v.hinweis}</p>` : ''}</div>`).join('')}</div>` : ''}
+            ${med.kinder ? `<div class="dose-section"><div class="dose-title"><div class="dose-icon child">K</div> Kinder</div>
+              ${Object.entries(med.kinder).map(([k, v]) => `<div class="dose-box child"><p><span class="dose-value">${v.dosis}</span></p>${v.hinweis ? `<p>${v.hinweis}</p>` : ''}</div>`).join('')}</div>` : ''}
+            ${med.warnung ? `<div class="warning"><span class="warning-icon">⚠️</span><span>${med.warnung}</span></div>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderAlgoList(kategorie) {
+      const filtered = algorithmen.filter(a => kategorie === 'all' || a.kategorie === kategorie);
+      algoList.innerHTML = filtered.map(algo => {
+        if (algo.typ === 'score') {
+          return `<div class="card" data-name="${algo.name}">
+            <div class="card-header score" onclick="toggleCard(this)">
+              <h3>${algo.name}</h3><span class="indication">${algo.kurz}</span>
+            </div>
+            <div class="card-body">
+              <table class="score-table">
+                ${algo.tabelle.map(t => `<tr><th colspan="${t.werte.length + 1}">${t.kriterium}</th></tr>
+                <tr>${t.werte.map(w => `<td><span class="score-val">${w.punkte}</span> ${w.text}</td>`).join('')}</tr>`).join('')}
+              </table>
+              <div class="warning"><span class="warning-icon">ℹ️</span><span>${algo.interpretation}</span></div>
+            </div>
+          </div>`;
+        } else {
+          return `<div class="card" data-name="${algo.name}">
+            <div class="card-header algo" onclick="toggleCard(this)">
+              <h3>${algo.name}</h3><span class="indication">${algo.kurz}</span>
+            </div>
+            <div class="card-body">
+              ${algo.schritte.map(s => `<div class="algo-step">
+                <div class="step-letter">${s.buchstabe}</div>
+                <div class="step-content">
+                  <div class="step-title">${s.titel}</div>
+                  <div class="step-desc">${s.desc}</div>
+                  ${s.aktionen && s.aktionen.length ? `<div class="step-actions">${s.aktionen.map(a => `<span class="step-action">${a}</span>`).join('')}</div>` : ''}
+                </div>
+              </div>`).join('')}
+            </div>
+          </div>`;
+        }
+      }).join('');
+    }
+
+    function filterAlgo(kategorie) {
+      document.querySelectorAll('#algorithmen .category-btn').forEach(b => b.classList.remove('active'));
+      event.target.closest('.category-btn').classList.add('active');
+      renderAlgoList(kategorie);
+    }
+
+    function toggleCard(header) { header.closest('.card').classList.toggle('open'); }
+
+    function switchView(viewId) {
+      views.forEach(v => v.classList.remove('active'));
+      tabs.forEach(t => t.classList.remove('active'));
+      navItems.forEach(n => n.classList.remove('active'));
+      document.getElementById(viewId)?.classList.add('active');
+      document.querySelector(`.tab[data-view="${viewId}"]`)?.classList.add('active');
+      document.querySelector(`.nav-item[data-view="${viewId}"]`)?.classList.add('active');
+    }
+
+    function showSymptom(symptom) {
+      const mapping = { schmerz: 'Schmerz', anaphylaxie: 'Anaphyla', krampf: 'Midazolam', atemweg: 'Salbutamol', pseudokrupp: 'Prednison', hypoglyk: 'Glucose', bradykardie: 'Atropin', hypertonie: 'Urapidil', intox: 'Naloxon' };
+      switchView('medikamente');
+      searchInput.value = mapping[symptom] || '';
+      renderMedList(mapping[symptom] || '');
+      setTimeout(() => { const c = medList.querySelector('.card'); if (c) { c.classList.add('open'); c.scrollIntoView({ behavior: 'smooth' }); } }, 100);
+    }
+
+    function setupEventListeners() {
+      tabs.forEach(t => t.addEventListener('click', () => switchView(t.dataset.view)));
+      navItems.forEach(n => n.addEventListener('click', () => switchView(n.dataset.view)));
+      searchInput.addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        const medMatch = medikamente.some(m => m.name.toLowerCase().includes(q) || m.indikationen.some(i => i.toLowerCase().includes(q)));
+        const algoMatch = algorithmen.some(a => a.name.toLowerCase().includes(q) || a.kurz.toLowerCase().includes(q));
+        if (q) {
+          if (algoMatch && !medMatch) {
+            switchView('algorithmen'); renderAlgoList('all');
+            algoList.querySelectorAll('.card').forEach(c => { c.style.display = c.dataset.name.toLowerCase().includes(q) ? 'block' : 'none'; });
+          } else { switchView('medikamente'); renderMedList(e.target.value); }
+        } else { renderMedList(''); renderAlgoList('all'); }
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
